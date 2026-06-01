@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="作業ログ">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>作業時間計算</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f0f13;color:#e2e8f0;font-family:-apple-system,'Hiragino Sans',sans-serif;padding:16px 12px 60px;font-size:14px}#app{max-width:540px;margin:0 auto;}
+h1{text-align:center;color:#a78bfa;font-size:20px;margin-bottom:4px}
+.sub{text-align:center;color:#64748b;font-size:12px;margin-bottom:20px}
+.card{background:#18181f;border:1px solid #2e2e3d;border-radius:12px;padding:16px;margin-bottom:16px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748b;text-transform:uppercase;margin-bottom:12px}
+.tbtn{border:none;border-radius:8px;cursor:pointer;font-weight:600;padding:8px 10px;width:80px;text-align:center;font-size:13px;transition:all .15s}
+.tbtn.empty{background:#7c6af7;color:#fff;box-shadow:0 0 8px rgba(124,106,247,.4)}
+.tbtn.filled{background:#1a1a2e;border:1px solid #7c6af7;color:#a78bfa;font-family:monospace;font-size:14px;font-weight:700}
+.tbtn-edit{width:80px;padding:7px 6px;border-radius:8px;border:1px solid #7c6af7;background:#0f0f13;color:#e2e8f0;font-size:16px;text-align:center;outline:none;font-family:monospace}
+.seg-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:nowrap}
+.seg-result{font-family:monospace;font-size:13px;color:#fbbf24;min-width:36px}
+.del-x{background:none;border:none;color:#64748b;cursor:pointer;font-size:14px;padding:0 2px}
+.del-x:hover{color:#f87171}
+.proc-box{background:#0f0f13;border:1px solid #2e2e3d;border-radius:8px;padding:10px;margin-bottom:8px}
+.proc-head{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.proc-name{flex:1;background:transparent;border:none;border-bottom:1px solid #2e2e3d;color:#e2e8f0;font-size:16px;padding:2px 4px;outline:none}
+.proc-name:focus{border-bottom-color:#7c6af7}
+.proc-total{font-family:monospace;font-size:12px;color:#34d399;white-space:nowrap}
+.proc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.day-box{background:#22222c;border:1px solid #2e2e3d;border-radius:10px;margin-bottom:10px;overflow:hidden}
+.day-head{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#1c1c26;border-bottom:1px solid #2e2e3d}
+.day-label{flex:1;color:#fbbf24;font-weight:700;font-size:14px;cursor:pointer;min-width:60px}
+.day-label-input{flex:1;background:transparent;border:none;border-bottom:1px solid #7c6af7;color:#fbbf24;font-weight:700;font-size:16px;outline:none}
+.day-total{font-family:monospace;font-size:12px;color:#34d399;white-space:nowrap}
+.day-body{padding:10px}
+.btn{border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;padding:7px 14px;border:none;transition:all .15s}
+.btn-primary{background:#7c6af7;color:#fff}
+.btn-ghost{background:#22222c;border:1px solid #2e2e3d;color:#94a3b8}
+.btn-danger{background:transparent;border:1px solid #3d1f1f;color:#f87171}
+.btn-dashed{background:transparent;border:1px dashed #2e2e3d;border-radius:6px;color:#64748b;cursor:pointer;font-size:12px;padding:4px 10px}
+.btn-row{display:flex;gap:8px;margin-top:12px}
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.sum-box{background:#22222c;border:1px solid #2e2e3d;border-radius:10px;padding:12px;text-align:center}
+.sum-box.full{grid-column:1/-1}
+.sum-label{font-size:11px;color:#64748b;margin-bottom:4px}
+.sum-val{font-family:monospace;font-size:22px;font-weight:700;color:#a78bfa}
+.sum-sub{font-size:12px;color:#64748b;margin-top:2px;font-family:monospace}
+.output{position:relative;background:#22222c;border:1px solid #2e2e3d;border-radius:8px;padding:12px 14px;margin-top:12px;white-space:pre-wrap;font-family:monospace;font-size:12px;color:#94a3b8;line-height:1.7}
+.copy-btn{position:absolute;top:8px;right:8px;background:#18181f;border:1px solid #2e2e3d;border-radius:6px;color:#64748b;cursor:pointer;font-size:11px;padding:3px 10px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tab{background:#22222c;border:1px solid #2e2e3d;border-radius:6px;color:#94a3b8;cursor:pointer;font-size:13px;padding:5px 12px}
+.tab.active{background:#7c6af7;border-color:#7c6af7;color:#fff}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999}
+.modal-box{background:#1c1c26;border:1px solid #2e2e3d;border-radius:12px;padding:22px 24px;max-width:280px;width:90%;text-align:center}
+.modal-msg{color:#e2e8f0;font-size:14px;margin-bottom:18px;line-height:1.6}
+.modal-btns{display:flex;gap:10px;justify-content:center}
+.divhr{border:none;border-top:1px solid #2e2e3d;margin:14px 0}
+</style>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+</head>
+<body>
+<div id="app">
+<h1>⏱ 作業時間計算</h1>
+<p class="sub">タップで時間記録</p>
+<div class="card">
+  <div class="card-title">作業ログ</div>
+  <div class="tabs" id="workTabs"></div>
+  <div id="workBody"></div>
+</div>
+</div>
+<div id="modalArea"></div>
+<script>
+function nowHHMM(){var d=new Date();return String(d.getHours())+String(d.getMinutes()).padStart(2,'0');}
+function parseT(raw,ctxH){
+  var s=String(raw).replace(/[^0-9]/g,'');if(!s)return null;
+  if(s.length<=2){var m=parseInt(s,10);if(m>59)return null;return{h:ctxH!=null?ctxH:0,m:m};}
+  var m=parseInt(s.slice(-2),10),h=parseInt(s.slice(0,-2),10);
+  if(m>59)return null;return{h:h,m:m};
+}
+function diffMin(a,b){
+  var s=parseT(a,null);if(!s)return null;
+  var es=String(b).replace(/[^0-9]/g,'');
+  var e=parseT(b,es.length<=2?s.h:null);if(!e)return null;
+  var d=(e.h*60+e.m)-(s.h*60+s.m);if(d<0)d+=1440;return d;
+}
+function toDisp(raw,ctxH){
+  var t=parseT(String(raw).replace(/[^0-9]/g,''),ctxH!=null?ctxH:null);
+  if(!t)return null;return t.h+':'+String(t.m).padStart(2,'0');
+}
+function parseDateStr(raw){
+  var s=String(raw).replace(/[^0-9]/g,'');if(s.length<3)return null;
+  var mo,d;if(s.length===3){mo=+s[0];d=+s.slice(1);}else{mo=+s.slice(0,2);d=+s.slice(2);}
+  if(mo<1||mo>12||d<1||d>31)return null;
+  var dt=new Date(new Date().getFullYear(),mo-1,d);
+  if(dt.getMonth()!==mo-1)return null;
+  return mo+'/'+d+'('+'日月火水木金土'[dt.getDay()]+')';
+}
+function todayLabel(){var d=new Date();return (d.getMonth()+1)+'/'+d.getDate()+'('+'日月火水木金土'[d.getDay()]+')'}
+function hStr(m){return (m/60).toFixed(1)+'h';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function showModal(msg,onOk){
+  document.getElementById('modalArea').innerHTML='<div class="modal-bg"><div class="modal-box"><p class="modal-msg">'+esc(msg)+'</p><div class="modal-btns"><button class="btn btn-ghost" onclick="closeModal()">キャンセル</button><button class="btn btn-danger" onclick="_mOk()">削除する</button></div></div></div>';
+  window._mOk=function(){closeModal();onOk();};
+}
+function closeModal(){document.getElementById('modalArea').innerHTML='';}
+
+
+function makeTimeCell(getV,setV,getCtx,lbl){
+  var w=document.createElement('span');
+  var btn=document.createElement('button'),inp=document.createElement('input');
+  inp.className='tbtn-edit';inp.maxLength=6;inp.inputMode='numeric';inp.style.display='none';
+  function dv(){var v=getV();if(!v)return null;return toDisp(v,getCtx())||v;}
+  function sb(){var v=getV();btn.className=v?'tbtn filled':'tbtn empty';btn.textContent=v?(dv()||v):lbl;btn.style.display='';inp.style.display='none';}
+  function si(){btn.style.display='none';inp.value=getV();inp.style.display='';inp.focus();inp.select();}
+  function cm(){var r=inp.value.trim();if(r)setV(r);sb();}
+  // 未入力: 現在時刻をセット。入力済み: 編集モードへ（touchendで直接フォーカス）
+  btn.addEventListener('touchend',function(e){
+    e.preventDefault();
+    if(!getV()){setV(nowHHMM());sb();}else{si();}
+  });
+  btn.onclick=function(){if(!getV()){setV(nowHHMM());sb();}else si();};
+  inp.onblur=cm;
+  inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();if(!inp.value.trim())inp.value=nowHHMM();cm();}if(e.key==='Escape'){inp.value=getV();sb();}};
+  sb();w.appendChild(btn);w.appendChild(inp);return w;
+}
+
+
+var works,aw=0;
+function W(){return works[aw];}
+function saveData(){try{localStorage.setItem('tcData',JSON.stringify({works:works,aw:aw}));}catch(e){}}
+function loadData(){
+  try{
+    var s=localStorage.getItem('tcData');
+    if(!s)return false;
+    var d=JSON.parse(s);
+    if(d&&d.works&&d.works.length){works=d.works;aw=d.aw||0;return true;}
+  }catch(e){}
+  return false;
+}
+function exportData(){
+  var json=JSON.stringify({version:1,works:works,aw:aw},null,2);
+  var d=new Date();
+  var fname='sagyolog_'+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'.json';
+  try{
+    var blob=new Blob([json],{type:'application/json'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download=fname;
+    document.body.appendChild(a);a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }catch(e){
+    showExportModal(json,false);
+  }
+}
+function showExportModal(json,copied){
+  var el=document.getElementById('modalArea');
+  var inner='<div class="modal-bg"><div class="modal-box" style="max-width:340px;width:95%;text-align:left">';
+  if(copied){
+    inner+='<p class="modal-msg" style="text-align:center">クリップボードにコピーしました。<br>メモ帳等に貼り付けて<br><b>sagyolog_日付.json</b><br>という名前で保存してください。</p>';
+    inner+='<div class="modal-btns"><button class="btn btn-primary" onclick="closeModal()">OK</button></div>';
+  }else{
+    inner+='<p class="modal-msg" style="text-align:center;margin-bottom:8px">全選択→コピーして<br><b>sagyolog_日付.json</b>で保存</p>';
+    inner+='<textarea id="expTa" readonly style="width:100%;height:120px;background:#0f0f13;border:1px solid #2e2e3d;border-radius:6px;color:#94a3b8;font-size:11px;padding:8px;resize:none;box-sizing:border-box;display:block">'+esc(json)+'</textarea>';
+    inner+='<div class="modal-btns" style="margin-top:10px"><button class="btn btn-primary" id="expCopyBtn" onclick="var t=document.getElementById(&quot;expTa&quot;);t.select();document.execCommand(&quot;copy&quot;);document.getElementById(&quot;expCopyBtn&quot;).textContent=&quot;✓ コピー済み&quot;">全選択してコピー</button><button class="btn btn-ghost" style="margin-left:8px" onclick="closeModal()">閉じる</button></div>';
+  }
+  inner+='</div></div>';
+  el.innerHTML=inner;
+}
+function importData(){
+  var inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';
+  inp.onchange=function(){
+    var file=inp.files[0];if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        var d=JSON.parse(e.target.result);
+        if(!d.works||!d.works.length){alert('データが見つかりませんでした');return;}
+        showModal('現在のデータを上書きしてインポートしますか？',function(){
+          works=d.works;aw=d.aw||0;saveData();render();
+        });
+      }catch(ex){alert('ファイルの読み込みに失敗しました');}
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+function pTotal(p){return p.segments.reduce(function(s,g){var d=(g.start&&g.end)?diffMin(g.start,g.end):null;return s+(d||0);},0);}
+function dTotal(day){return day.processes.reduce(function(s,p){return s+pTotal(p);},0);}
+function wTotal(){return W().days.reduce(function(s,d){return s+dTotal(d);},0);}
+function nSeg(){return{start:'',end:''};}
+function nProc(di){
+  var n=1;
+  if(di!=null&&W()&&W().days[di])n=W().days[di].processes.length+1;
+  return{name:'作業'+n,segments:[nSeg()]};
+}
+function nDay(){return{label:todayLabel(),processes:[nProc()]};}
+
+function render(){
+  saveData();
+  // tabs
+  var tabs=document.getElementById('workTabs');tabs.innerHTML='';
+  works.forEach(function(w,i){
+    var b=document.createElement('button');b.className='tab'+(i===aw?' active':'');b.textContent=w.name||'作業ログ'+(i+1);
+    (function(i2){b.onclick=function(){aw=i2;render();};})(i);tabs.appendChild(b);
+  });
+  var ab=document.createElement('button');ab.className='tab';ab.textContent='＋ 作業ログ追加';
+  ab.onclick=function(){works.push({name:'作業ログ'+(works.length+1),days:[nDay()]});aw=works.length-1;render();};tabs.appendChild(ab);
+
+  var body=document.getElementById('workBody');body.innerHTML='';
+  var work=W();
+
+  var ni=document.createElement('textarea');
+  ni.style.cssText='width:100%;background:#22222c;border:1px solid #2e2e3d;border-radius:8px;color:#e2e8f0;font-size:16px;padding:8px 12px;margin-bottom:12px;outline:none;box-sizing:border-box;resize:none;overflow:hidden;line-height:1.5';
+  ni.placeholder='作業ログ名を入力';
+  ni.value=work.name;
+  ni.rows=1;
+  function autoH(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+  var _niComp=false;
+  ni.addEventListener('compositionstart',function(){_niComp=true;});
+  ni.addEventListener('compositionend',function(){
+    _niComp=false;
+    work.name=this.value||('作業ログ'+(aw+1));
+    var t=document.querySelectorAll('.tab');
+    if(t[aw])t[aw].textContent=work.name;
+    autoH(this);saveData();
+  });
+  ni.oninput=function(){
+    if(_niComp)return;
+    work.name=this.value||('作業ログ'+(aw+1));
+    var t=document.querySelectorAll('.tab');
+    if(t[aw])t[aw].textContent=work.name;
+    autoH(this);saveData();
+  };
+  ni.onblur=function(){
+    if(_niComp){_niComp=false;this.value=work.name;return;}
+    if(!this.value.trim()){
+      work.name='作業ログ'+(aw+1);this.value=work.name;
+      var t=document.querySelectorAll('.tab');
+      if(t[aw])t[aw].textContent=work.name;saveData();
+    }
+  };
+  ni.onfocus=function(){this.select();};
+  setTimeout(function(){autoH(ni);},0);
+  body.appendChild(ni);
+
+  if(!work.days.length){var ep=document.createElement('p');ep.style.cssText='color:#64748b;font-size:13px;text-align:center;padding:14px';ep.textContent='「日を追加」で作業日を追加してください';body.appendChild(ep);}
+
+  work.days.forEach(function(day,di){
+    var dayEl=document.createElement('div');dayEl.className='day-box';
+    var head=document.createElement('div');head.className='day-head';
+
+    // 日付: 常にinput表示（iOSでspanクリック→focusが効かないため）
+    var lbl=document.createElement('input');lbl.className='day-label-input';
+    lbl.style.cssText='flex:1;background:transparent;border:none;border-bottom:1px solid transparent;color:#fbbf24;font-weight:700;font-size:16px;outline:none;min-width:60px;cursor:pointer;';
+    lbl.value=day.label||'';lbl.placeholder='日付';lbl.inputMode='numeric';
+    lbl.onfocus=function(){this.style.borderBottomColor='#7c6af7';this.select();};
+    lbl.onblur=function(){
+      this.style.borderBottomColor='transparent';
+      var p=parseDateStr(this.value);
+      if(p){day.label=p;this.value=p;}else{day.label=this.value;}
+      renderSum();saveData();
+    };
+    lbl.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();this.blur();}};
+
+    var dtEl=document.createElement('span');dtEl.className='day-total';
+    var dt=dTotal(day);dtEl.textContent=dt>0?('計'+dt+'分'+(dt>=60?' ('+hStr(dt)+')':'')):'—';
+
+    var ddel=document.createElement('button');ddel.className='del-x';ddel.style.fontSize='16px';ddel.textContent='✕';
+    (function(i,l){ddel.onclick=function(){showModal('「'+(l||'DAY '+(i+1))+'」を削除しますか？',function(){work.days.splice(i,1);render();});};})(di,day.label);
+
+    // カレンダー: label[for=id]方式
+    // カレンダー: inputをheadに直接置きbuttonで.click()を呼ぶ
+    var calInp=document.createElement('input');calInp.type='date';
+    calInp.style.cssText='position:absolute;opacity:0;width:0;height:0;font-size:16px;pointer-events:none;';
+    calInp.value=new Date().toISOString().slice(0,10);
+    calInp.addEventListener('change',function(){
+      if(!this.value)return;
+      var pts=this.value.split('-').map(Number),mo=pts[1],d=pts[2];
+      var wd='日月火水木金土'[new Date(pts[0],mo-1,d).getDay()];
+      day.label=mo+'/'+d+'('+wd+')';lbl.value=day.label;renderSum();saveData();
+    });
+    var calBtn=document.createElement('button');
+    calBtn.textContent='📅';
+    calBtn.type='button';
+    calBtn.style.cssText='background:transparent;border:none;cursor:pointer;font-size:16px;padding:0 4px;line-height:1;flex-shrink:0;position:relative;';
+    calBtn.appendChild(calInp);
+    calBtn.addEventListener('click',function(e){
+      e.stopPropagation();
+      var ua=navigator.userAgent;var isIOS=/iP(hone|ad|od)/.test(ua)||(ua.includes('Macintosh')&&navigator.maxTouchPoints>1);
+      if(isIOS){
+        // iOS: labelクリック方式が確実
+        var tmp=document.createElement('label');
+        tmp.style.cssText='position:fixed;opacity:0;top:0;left:0;width:1px;height:1px;';
+        var tmpInp=document.createElement('input');tmpInp.type='date';tmpInp.style.cssText='position:fixed;opacity:0;font-size:16px;';
+        tmpInp.value=calInp.value;
+        tmpInp.addEventListener('change',function(){
+          if(!this.value)return;
+          var pts=this.value.split('-').map(Number),mo=pts[1],d=pts[2];
+          var wd='日月火水木金土'[new Date(pts[0],mo-1,d).getDay()];
+          day.label=mo+'/'+d+'('+wd+')';lbl.value=day.label;renderSum();saveData();
+          document.body.removeChild(tmp);
+        });
+        tmp.appendChild(tmpInp);
+        document.body.appendChild(tmp);
+        tmpInp.focus();tmpInp.click();
+      } else {
+        try{calInp.showPicker();}catch(ex){calInp.click();}
+      }
+    });
+    head.appendChild(calBtn);head.appendChild(lbl);head.appendChild(dtEl);head.appendChild(ddel);dayEl.appendChild(head);
+    var dbody=document.createElement('div');dbody.className='day-body';
+
+    day.processes.forEach(function(proc,pi){
+      var pbox=document.createElement('div');pbox.className='proc-box';
+      var phead=document.createElement('div');phead.className='proc-head';
+      var pn=document.createElement('textarea');pn.className='proc-name';pn.rows=1;
+      pn.style.cssText+='resize:none;overflow:hidden;line-height:1.4';
+      var _defProcName='作業'+(pi+1);
+      pn.placeholder='作業名を入力';
+      pn.value=proc.name;
+      function autoHp(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+      var _pnComp=false;
+      pn.addEventListener('compositionstart',function(){_pnComp=true;});
+      pn.addEventListener('compositionend',function(){
+        _pnComp=false;
+        proc.name=this.value||_defProcName;
+        autoHp(this);renderSum();saveData();
+      });
+      pn.oninput=function(){
+        if(_pnComp)return;
+        proc.name=this.value||_defProcName;
+        autoHp(this);renderSum();saveData();
+      };
+      pn.onblur=function(){
+        // 未確定中に離脱した場合: valueをprocの確定済み名で上書きして戻す
+        if(_pnComp){_pnComp=false;this.value=proc.name;return;}
+        if(!this.value.trim()){proc.name=_defProcName;this.value=_defProcName;renderSum();saveData();}
+      };
+      pn.onfocus=function(){this.select();};
+      setTimeout(function(){autoHp(pn);},0);
+      var ptEl=document.createElement('span');ptEl.className='proc-total';ptEl.textContent=pTotal(proc)>0?pTotal(proc)+'分':'';
+      var pdel=document.createElement('button');pdel.className='del-x';pdel.textContent='✕';
+      (function(i,j,n){pdel.onclick=function(){showModal('「'+(n||'この作業')+'」を削除しますか？',function(){work.days[i].processes.splice(j,1);render();});};})(di,pi,proc.name);
+      phead.appendChild(pn);phead.appendChild(ptEl);phead.appendChild(pdel);pbox.appendChild(phead);
+
+      proc.segments.forEach(function(seg,si){
+        var row=document.createElement('div');row.className='seg-row';
+        row.appendChild(makeTimeCell(
+          function(){return seg.start;},
+          function(v){seg.start=v;updateRow(row,seg,pbox,proc,dtEl,day);},
+          function(){return null;},'開始'));
+        var ar=document.createElement('span');ar.style.color='#64748b';ar.textContent='→';row.appendChild(ar);
+        row.appendChild(makeTimeCell(
+          function(){return seg.end;},
+          function(v){seg.end=v;updateRow(row,seg,pbox,proc,dtEl,day);},
+          function(){var sp=parseT(seg.start,null);var es=String(seg.end).replace(/[^0-9]/g,'');return(sp&&es.length<=2)?sp.h:null;},'終了'));
+        var res=document.createElement('span');res.className='seg-result';
+        var d2=(seg.start&&seg.end)?diffMin(seg.start,seg.end):null;res.textContent=d2!==null?d2+'分':(seg.start||seg.end?'?':'—');
+        row.appendChild(res);
+        if(proc.segments.length>1){var sx=document.createElement('button');sx.className='del-x';sx.textContent='✕';(function(i,j,k){sx.onclick=function(){work.days[i].processes[j].segments.splice(k,1);render();};})(di,pi,si);row.appendChild(sx);}
+        pbox.appendChild(row);
+      });
+
+      var asb=document.createElement('button');asb.className='btn-dashed';asb.style.marginTop='4px';asb.textContent='＋ 時間追加';
+      (function(i,j){asb.onclick=function(){work.days[i].processes[j].segments.push(nSeg());render();};})(di,pi);
+      pbox.appendChild(asb);
+      dbody.appendChild(pbox);
+    });
+
+    var apb=document.createElement('button');apb.className='btn btn-ghost';apb.style.marginTop='6px';apb.textContent='＋ 作業追加';
+    (function(i){apb.onclick=function(){work.days[i].processes.push(nProc(i));render();};})(di);
+    dbody.appendChild(apb);dayEl.appendChild(dbody);body.appendChild(dayEl);
+  });
+
+  var br=document.createElement('div');br.className='btn-row';
+  var adb=document.createElement('button');adb.className='btn btn-primary';adb.textContent='＋ 日を追加';
+  adb.onclick=function(){work.days.push(nDay());render();};
+  var dwb=document.createElement('button');dwb.className='btn btn-danger';dwb.textContent='作業ログ削除';
+  dwb.onclick=function(){
+    showModal('「'+(work.name||'作業ログ'+(aw+1))+'」を削除しますか？',function(){
+      if(works.length===1){works[0]={name:'作業ログ1',days:[nDay()]};}else{works.splice(aw,1);if(aw>=works.length)aw=works.length-1;}render();
+    });
+  };
+  br.appendChild(adb);br.appendChild(dwb);body.appendChild(br);
+  renderSum();
+}
+
+function updateRow(row,seg,pbox,proc,dtEl,day){saveData();
+  var res=row.querySelector('.seg-result');
+  if(res){var d=(seg.start&&seg.end)?diffMin(seg.start,seg.end):null;res.textContent=d!==null?d+'分':(seg.start||seg.end?'?':'—');}
+  var pt=pTotal(proc);
+  var ptEl=pbox?pbox.querySelector('.proc-total'):null;
+  if(ptEl)ptEl.textContent=pt>0?pt+'分':'';
+  var dt=dTotal(day);if(dtEl)dtEl.textContent=dt>0?('計'+dt+'分'+(dt>=60?' ('+hStr(dt)+')':'')):'—';
+  renderSum();
+}
+
+function renderSum(){
+  var body=document.getElementById('workBody');
+  var old=body.querySelector('.sa');if(old)old.remove();
+  var work=W();if(!work.days.length)return;
+  var area=document.createElement('div');area.className='sa';
+  var hr=document.createElement('hr');hr.className='divhr';area.appendChild(hr);
+  var grid=document.createElement('div');grid.className='sum-grid';
+  work.days.forEach(function(day,i){
+    var dt=dTotal(day);
+    var b=document.createElement('div');b.className='sum-box';
+    b.innerHTML='<div class="sum-label">'+esc(day.label||'DAY '+(i+1))+'</div><div class="sum-val">'+dt+'<span style="font-size:12px;color:#64748b">分</span></div>'+(dt>=60?'<div class="sum-sub">'+hStr(dt)+'</div>':'');
+    grid.appendChild(b);
+  });
+  var wt=wTotal();
+  var wb=document.createElement('div');wb.className='sum-box full';
+  wb.innerHTML='<div class="sum-label">作業合計</div><div class="sum-val" style="font-size:26px">'+wt+'<span style="font-size:12px;color:#64748b">分</span></div>'+(wt>=60?'<div class="sum-sub">'+hStr(wt)+'</div>':'');
+  grid.appendChild(wb);area.appendChild(grid);
+  var txt=genTxt(work);
+  var out=document.createElement('div');out.className='output';out.textContent=txt;
+  var cb=document.createElement('button');cb.className='copy-btn';cb.textContent='コピー';
+  cb.onclick=function(){navigator.clipboard.writeText(txt).then(function(){cb.textContent='✓ 完了';setTimeout(function(){cb.textContent='コピー';},1500);});};
+  out.insertBefore(cb,out.firstChild);area.appendChild(out);
+  var br3=document.createElement('div');br3.style.cssText='display:flex;gap:6px;margin-top:10px;flex-wrap:nowrap;';
+  var expBtn=document.createElement('button');expBtn.className='btn btn-ghost';expBtn.textContent='📤 エクスポート';expBtn.onclick=exportData;expBtn.style.cssText='flex:1;font-size:clamp(10px,3vw,13px);padding:7px 4px;white-space:nowrap;overflow:hidden;';
+  var impBtn=document.createElement('button');impBtn.className='btn btn-ghost';impBtn.textContent='📥 インポート';impBtn.onclick=importData;impBtn.style.cssText='flex:1;font-size:clamp(10px,3vw,13px);padding:7px 4px;white-space:nowrap;overflow:hidden;';
+  var clrBtn=document.createElement('button');clrBtn.className='btn btn-danger';clrBtn.textContent='🗑️ クリア';clrBtn.style.cssText='flex:1;font-size:clamp(10px,3vw,13px);padding:7px 4px;white-space:nowrap;overflow:hidden;border-color:#3d1f1f;';
+  clrBtn.onclick=function(){
+    showModal('すべてのデータをクリアしますか？',function(){
+      works=[{name:'作業ログ1',days:[nDay()]}];aw=0;saveData();render();
+    });
+  };
+  br3.appendChild(expBtn);br3.appendChild(impBtn);br3.appendChild(clrBtn);area.appendChild(br3);
+  body.appendChild(area);
+}
+
+function genTxt(work){
+  var lines=[];
+  work.days.forEach(function(day){
+    lines.push(day.label||'（日付未入力）');
+    day.processes.forEach(function(p){
+      var segs=p.segments.map(function(g){
+        if(!g.start&&!g.end)return null;
+        var s=parseT(g.start,null);var es=String(g.end).replace(/[^0-9]/g,'');var e=parseT(g.end,es.length<=2&&s?s.h:null);
+        if(!s||!e)return null;return s.h+':'+String(s.m).padStart(2,'0')+'-'+e.h+':'+String(e.m).padStart(2,'0');
+      }).filter(Boolean).join(',');
+      lines.push((p.name||'（作業名未入力）')+'　'+segs+'（'+pTotal(p)+'分）');
+    });
+    var dt=dTotal(day);lines.push('計'+dt+'分'+(dt>=60?' '+hStr(dt):''));lines.push('');
+  });
+  var wt=wTotal();lines.push('総計'+wt+'分'+(wt>=60?' '+hStr(wt):''));return lines.join('\n');
+}
+
+if(!loadData())works=[{name:'作業ログ1',days:[nDay()]}];
+render();
+</script>
+</body>
+</html>
