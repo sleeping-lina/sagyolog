@@ -109,22 +109,64 @@ function closeModal(){document.getElementById('modalArea').innerHTML='';}
 
 
 function makeTimeCell(getV,setV,getCtx,lbl){
-  var w=document.createElement('span');
-  var btn=document.createElement('button'),inp=document.createElement('input');
-  inp.className='tbtn-edit';inp.maxLength=6;inp.inputMode='numeric';inp.style.display='none';
-  function dv(){var v=getV();if(!v)return null;return toDisp(v,getCtx())||v;}
-  function sb(){var v=getV();btn.className=v?'tbtn filled':'tbtn empty';btn.textContent=v?(dv()||v):lbl;btn.style.display='';inp.style.display='none';}
-  function si(){btn.style.display='none';inp.value=getV();inp.style.display='';inp.focus();inp.select();}
-  function cm(){var r=inp.value.trim();if(r)setV(r);sb();}
-  // 未入力: 現在時刻をセット。入力済み: 編集モードへ（touchendで直接フォーカス）
-  btn.addEventListener('touchend',function(e){
-    e.preventDefault();
-    if(!getV()){setV(nowHHMM());sb();}else{si();}
+  var w=document.createElement('span');w.style.cssText='display:inline-flex;align-items:center;';
+  var btn=document.createElement('button');
+  // 編集モード: H input + ':' + MM input
+  var inpH=document.createElement('input');  // 時
+  var colon=document.createElement('span');
+  var inpM=document.createElement('input');  // 分
+  [inpH,inpM].forEach(function(i){
+    i.inputMode='numeric';i.style.cssText='display:none;background:#0f0f13;border:none;color:#e2e8f0;font-family:monospace;font-size:16px;outline:none;text-align:center;width:36px;padding:6px 2px;';
   });
+  colon.textContent=':';colon.style.cssText='display:none;color:#a78bfa;font-size:16px;font-weight:700;padding:0 1px;';
+  inpH.maxLength=2;inpM.maxLength=2;
+
+  function dv(){var v=getV();if(!v)return null;return toDisp(v,getCtx())||v;}
+  function sb(){
+    var v=getV();btn.className=v?'tbtn filled':'tbtn empty';btn.textContent=v?(dv()||v):lbl;
+    btn.style.display='';inpH.style.display='none';colon.style.display='none';inpM.style.display='none';
+  }
+  function si(){
+    var v=getV()||'';
+    var t=parseT(v,null);
+    btn.style.display='none';
+    inpH.value=t?String(t.h):'';inpM.value=t?String(t.m).padStart(2,'0'):'';
+    inpH.style.display='';colon.style.display='';inpM.style.display='';
+    inpH.focus();inpH.select();
+  }
+  function cm(){
+    var h=inpH.value.trim(),m=inpM.value.trim();
+    if(h||m){
+      var hv=parseInt(h||'0',10),mv=parseInt(m||'0',10);
+      if(!isNaN(hv)&&!isNaN(mv)&&mv<60)setV(String(hv)+String(mv).padStart(2,'0'));
+    }
+    sb();
+  }
+  btn.addEventListener('touchend',function(e){e.preventDefault();if(!getV()){setV(nowHHMM());sb();}else{si();}});
   btn.onclick=function(){if(!getV()){setV(nowHHMM());sb();}else si();};
-  inp.onblur=cm;
-  inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();if(!inp.value.trim())inp.value=nowHHMM();cm();}if(e.key==='Escape'){inp.value=getV();sb();}};
-  sb();w.appendChild(btn);w.appendChild(inp);return w;
+  // 時input: Enterや:で分へ移動
+  inpH.addEventListener('keydown',function(e){
+    if(e.key===':'||e.key==='	'||e.key==='Enter'){e.preventDefault();inpM.focus();inpM.select();}
+    if(e.key==='Escape'){sb();}
+  });
+  inpH.addEventListener('input',function(){
+    if(this.value.length>=2){
+      var self=this;
+      setTimeout(function(){inpM.focus();inpM.select();},10);
+    }
+  });
+  inpM.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){e.preventDefault();cm();}
+    if(e.key==='Escape'){sb();}
+    if(e.key==='Backspace'&&this.value===''){inpH.focus();inpH.select();}
+  });
+  inpH.onblur=function(){
+    setTimeout(function(){if(document.activeElement!==inpM)cm();},50);
+  };
+  inpM.onblur=function(){if(document.activeElement!==inpH)cm();};
+  sb();
+  w.appendChild(btn);w.appendChild(inpH);w.appendChild(colon);w.appendChild(inpM);
+  return w;
 }
 
 
@@ -255,16 +297,9 @@ function render(){
 
     // 日付: 常にinput表示（iOSでspanクリック→focusが効かないため）
     var lbl=document.createElement('input');lbl.className='day-label-input';
-    lbl.style.cssText='flex:1;background:transparent;border:none;border-bottom:1px solid transparent;color:#fbbf24;font-weight:700;font-size:16px;outline:none;min-width:60px;cursor:pointer;';
+    lbl.style.cssText='flex:1;background:transparent;border:none;color:#fbbf24;font-weight:700;font-size:16px;outline:none;min-width:60px;cursor:default;pointer-events:none;user-select:none;';
     lbl.value=day.label||'';lbl.placeholder='日付';lbl.inputMode='numeric';
-    lbl.onfocus=function(){this.style.borderBottomColor='#7c6af7';this.select();};
-    lbl.onblur=function(){
-      this.style.borderBottomColor='transparent';
-      var p=parseDateStr(this.value);
-      if(p){day.label=p;this.value=p;}else{day.label=this.value;}
-      renderSum();saveData();
-    };
-    lbl.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();this.blur();}};
+
 
     var dtEl=document.createElement('span');dtEl.className='day-total';
     var dt=dTotal(day);dtEl.textContent=dt>0?('計'+dt+'分'+(dt>=60?' ('+hStr(dt)+')':'')):'—';
@@ -276,33 +311,64 @@ function render(){
     // カレンダー: inputをheadに直接置きbuttonで.click()を呼ぶ
     var calInp=document.createElement('input');calInp.type='date';
     calInp.style.cssText='position:absolute;opacity:0;width:0;height:0;font-size:16px;pointer-events:none;';
-    calInp.value=new Date().toISOString().slice(0,10);
+    // day.labelから日付を逆算してcalInpの初期値を設定
+    (function(){
+      var yr=new Date().getFullYear();
+      var lv=day.label||'';
+      var m=lv.match(/^(\d+)\/(\d+)/);
+      if(m){
+        var mo=parseInt(m[1]),d=parseInt(m[2]);
+        calInp.value=yr+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      }else{
+        calInp.value=new Date().toISOString().slice(0,10);
+      }
+    })();
     calInp.addEventListener('change',function(){
-      if(!this.value)return;
-      var pts=this.value.split('-').map(Number),mo=pts[1],d=pts[2];
-      var wd='日月火水木金土'[new Date(pts[0],mo-1,d).getDay()];
+      var v=this.value;if(!v||v.length<8)return;
+      var pts=v.split('-');if(pts.length<3)return;
+      var y=parseInt(pts[0],10),mo=parseInt(pts[1],10),d=parseInt(pts[2],10);
+      if(!y||!mo||!d)return;
+      var _dt=new Date(y,mo-1,d);var wd=isNaN(_dt.getTime())?'?':'日月火水木金土'[_dt.getDay()];
       day.label=mo+'/'+d+'('+wd+')';lbl.value=day.label;renderSum();saveData();
     });
-    var calBtn=document.createElement('button');
-    calBtn.textContent='📅';
-    calBtn.type='button';
-    calBtn.style.cssText='background:transparent;border:none;cursor:pointer;font-size:16px;padding:0 4px;line-height:1;flex-shrink:0;position:relative;';
-    calBtn.appendChild(calInp);
-    calBtn.addEventListener('click',function(e){
-      e.stopPropagation();
-      var ua=navigator.userAgent;var isIOS=/iP(hone|ad|od)/.test(ua)||(ua.includes('Macintosh')&&navigator.maxTouchPoints>1);
+    // 日付エリア全体（アイコン＋テキスト）をタップでカレンダー起動
+    function openCal(){
+      var ua=navigator.userAgent;
+      var isIOS=/iP(hone|ad|od)/.test(ua)||(ua.includes('Macintosh')&&navigator.maxTouchPoints>1);
       if(isIOS){
-        // iOS: labelクリック方式が確実
         var tmp=document.createElement('label');
         tmp.style.cssText='position:fixed;opacity:0;top:0;left:0;width:1px;height:1px;';
-        var tmpInp=document.createElement('input');tmpInp.type='date';tmpInp.style.cssText='position:fixed;opacity:0;font-size:16px;';
+        var tmpInp=document.createElement('input');tmpInp.type='date';
+        tmpInp.style.cssText='position:fixed;opacity:0;font-size:16px;';
+        // 確定済みの日付をカレンダー初期値に設定
         tmpInp.value=calInp.value;
         tmpInp.addEventListener('change',function(){
-          if(!this.value)return;
-          var pts=this.value.split('-').map(Number),mo=pts[1],d=pts[2];
-          var wd='日月火水木金土'[new Date(pts[0],mo-1,d).getDay()];
-          day.label=mo+'/'+d+'('+wd+')';lbl.value=day.label;renderSum();saveData();
-          document.body.removeChild(tmp);
+          var v=this.value;
+          // valueが空の場合はinputイベントからも取得を試みる
+          if(!v)v=tmpInp.value;
+          if(!v||v.length<8){document.body.removeChild(tmp);return;}
+          var pts=v.split('-');
+          if(pts.length<3){document.body.removeChild(tmp);return;}
+          var y=parseInt(pts[0],10),mo=parseInt(pts[1],10),d=parseInt(pts[2],10);
+          if(!y||!mo||!d){document.body.removeChild(tmp);return;}
+          var _dt=new Date(y,mo-1,d);var wd=isNaN(_dt.getTime())?'?':'日月火水木金土'[_dt.getDay()];
+          day.label=mo+'/'+d+'('+wd+')';
+          calInp.value=v;
+          lbl.value=day.label;renderSum();saveData();
+          if(document.body.contains(tmp))document.body.removeChild(tmp);
+        });
+        // inputイベントでも拾う（iOSが changeを発火しない場合の保険）
+        tmpInp.addEventListener('input',function(){
+          var v=this.value;
+          if(!v||v.length<8)return;
+          var pts=v.split('-');
+          if(pts.length<3)return;
+          var y=parseInt(pts[0],10),mo=parseInt(pts[1],10),d=parseInt(pts[2],10);
+          if(!y||!mo||!d)return;
+          var _dt=new Date(y,mo-1,d);var wd=isNaN(_dt.getTime())?'?':'日月火水木金土'[_dt.getDay()];
+          day.label=mo+'/'+d+'('+wd+')';
+          calInp.value=v;
+          lbl.value=day.label;renderSum();saveData();
         });
         tmp.appendChild(tmpInp);
         document.body.appendChild(tmp);
@@ -310,7 +376,18 @@ function render(){
       } else {
         try{calInp.showPicker();}catch(ex){calInp.click();}
       }
-    });
+    }
+    var calBtn=document.createElement('button');
+    calBtn.textContent='📅';calBtn.type='button';
+    calBtn.style.cssText='background:transparent;border:none;cursor:pointer;font-size:16px;padding:0 2px;line-height:1;flex-shrink:0;position:relative;';
+    calBtn.appendChild(calInp);
+    calBtn.addEventListener('click',function(e){e.stopPropagation();openCal();});
+    calBtn.addEventListener('touchend',function(e){e.preventDefault();e.stopPropagation();openCal();});
+    // lbl テキスト部分もタップでカレンダー起動
+    lbl.style.cursor='pointer';
+    lbl.style.pointerEvents='auto';
+    lbl.addEventListener('click',function(e){e.stopPropagation();openCal();});
+    lbl.addEventListener('touchend',function(e){e.preventDefault();e.stopPropagation();openCal();});
     head.appendChild(calBtn);head.appendChild(lbl);head.appendChild(dtEl);head.appendChild(ddel);dayEl.appendChild(head);
     var dbody=document.createElement('div');dbody.className='day-body';
 
