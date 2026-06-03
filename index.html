@@ -58,8 +58,6 @@ h1{text-align:center;color:#a78bfa;font-size:20px;margin-bottom:4px}
 .divhr{border:none;border-top:1px solid #2e2e3d;margin:14px 0}
 .chevron-btn{background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:18px;padding:0 4px;line-height:1;flex-shrink:0;transition:color .15s}
 .chevron-btn:hover{color:#a78bfa}
-.copy-proc-btn{background:transparent;border:none;color:#64748b;cursor:pointer;font-size:15px;padding:0 3px;transition:color .15s}
-.copy-proc-btn:hover{color:#a78bfa}
 .undo-btn{background:#22222c;border:1px solid #2e2e3d;border-radius:8px;color:#94a3b8;cursor:pointer;font-size:13px;font-weight:600;padding:7px 10px;transition:all .15s}
 .undo-btn:hover:not(:disabled){border-color:#7c6af7;color:#a78bfa}
 .undo-btn:disabled{opacity:0.3;cursor:default}
@@ -416,20 +414,22 @@ function render(){
     lbl.addEventListener('click',function(e){e.stopPropagation();openCal();});
     lbl.addEventListener('touchend',function(e){e.preventDefault();e.stopPropagation();openCal();});
     if(!day.hasOwnProperty('collapsed'))day.collapsed=false;
+    var dbody=document.createElement('div');dbody.className='day-body';
+    if(day.collapsed)dbody.style.display='none';
+    // chevBtnはdbody生成後に作成してdbodyを直接参照
     var chevBtn=document.createElement('button');chevBtn.className='chevron-btn';
-    chevBtn.textContent=day.collapsed?'⌃':'⌄';
-    (function(dIdx,btn,body){
+    chevBtn.textContent=day.collapsed?'∧':'∨';
+    (function(dIdx,btn,bd){
       btn.onclick=function(e){
         e.stopPropagation();
         work.days[dIdx].collapsed=!work.days[dIdx].collapsed;
-        var col=work.days[dIdx].collapsed;
-        btn.textContent=col?'⌃':'⌄';
-        body.style.display=col?'none':'';
+        btn.textContent=work.days[dIdx].collapsed?'∧':'∨';
+        bd.style.display=work.days[dIdx].collapsed?'none':'';
         saveData();
       };
     })(di,chevBtn,dbody);
-    head.appendChild(chevBtn);head.appendChild(calBtn);head.appendChild(lbl);head.appendChild(dtEl);head.appendChild(ddel);dayEl.appendChild(head);
-    var dbody=document.createElement('div');dbody.className='day-body';
+    // 位置: 📅 → 日付 → ∨/∧ → 合計 → ✕
+    head.appendChild(calBtn);head.appendChild(lbl);head.appendChild(chevBtn);head.appendChild(dtEl);head.appendChild(ddel);dayEl.appendChild(head);
 
     day.processes.forEach(function(proc,pi){
       var pbox=document.createElement('div');pbox.className='proc-box';
@@ -462,9 +462,15 @@ function render(){
       var ptEl=document.createElement('span');ptEl.className='proc-total';ptEl.textContent=pTotal(proc)>0?pTotal(proc)+'分':'';
       var pdel=document.createElement('button');pdel.className='del-x';pdel.textContent='✕';
       (function(i,j,n){pdel.onclick=function(){showModal('「'+(n||'この作業')+'」を削除しますか？',function(){snapshot();work.days[i].processes.splice(j,1);render();});};})(di,pi,proc.name);
-      var cpyBtn=document.createElement('button');cpyBtn.className='copy-proc-btn';cpyBtn.textContent='⧉';cpyBtn.title='コピー';
-      (function(dIdx,pIdx){cpyBtn.onclick=function(){showCopyModal(dIdx,pIdx);};})(di,pi);
-      phead.appendChild(pn);phead.appendChild(ptEl);phead.appendChild(cpyBtn);phead.appendChild(pdel);pbox.appendChild(phead);
+      var pmup=document.createElement('button');pmup.className='del-x';pmup.textContent='↑';pmup.style.fontSize='13px';
+      var pmdw=document.createElement('button');pmdw.className='del-x';pmdw.textContent='↓';pmdw.style.fontSize='13px';
+      if(pi===0)pmup.style.opacity='0.25';
+      if(pi===day.processes.length-1)pmdw.style.opacity='0.25';
+      (function(i,j){
+        pmup.onclick=function(){if(j>0){snapshot();var t=work.days[i].processes.splice(j,1)[0];work.days[i].processes.splice(j-1,0,t);saveData();render();}};
+        pmdw.onclick=function(){if(j<work.days[i].processes.length-1){snapshot();var t=work.days[i].processes.splice(j,1)[0];work.days[i].processes.splice(j+1,0,t);saveData();render();}};
+      })(di,pi);
+      phead.appendChild(pn);phead.appendChild(ptEl);phead.appendChild(pmup);phead.appendChild(pmdw);phead.appendChild(pdel);pbox.appendChild(phead);
 
       proc.segments.forEach(function(seg,si){
         var row=document.createElement('div');row.className='seg-row';
@@ -493,7 +499,6 @@ function render(){
     var apb=document.createElement('button');apb.className='btn btn-ghost';apb.style.marginTop='6px';apb.textContent='＋ 作業追加';
     (function(i){apb.onclick=function(){snapshot();work.days[i].processes.push(nProc(i));render();};})(di);
     dbody.appendChild(apb);
-    if(day.collapsed)dbody.style.display='none';
     dayEl.appendChild(dbody);
     body.appendChild(dayEl);
   });
@@ -523,24 +528,6 @@ function updateRow(row,seg,pbox,proc,dtEl,day){saveData();
   renderSum();
 }
 
-function showCopyModal(dIdx,pIdx){
-  var work=W(),proc=work.days[dIdx].processes[pIdx];
-  var opts='<option value="same">同じ日の末尾（'+esc(work.days[dIdx].label||'DAY '+(dIdx+1))+'）</option>';
-  work.days.forEach(function(day,i){if(i!==dIdx)opts+='<option value="'+i+'">'+esc(day.label||'DAY '+(i+1))+'</option>';});
-  document.getElementById('modalArea').innerHTML='<div class="modal-bg"><div class="modal-box" style="max-width:300px;width:92%">'
-    +'<p class="modal-msg">「'+esc(proc.name)+'」のコピー先：</p>'
-    +'<select id="cpDest" style="width:100%;background:#22222c;border:1px solid #2e2e3d;border-radius:8px;color:#e2e8f0;font-size:14px;padding:8px;margin-bottom:16px;box-sizing:border-box">'+opts+'</select>'
-    +'<div class="modal-btns"><button class="btn btn-primary" onclick="doCopy('+dIdx+','+pIdx+')">コピー</button>'
-    +'<button class="btn btn-ghost" style="margin-left:8px" onclick="closeModal()">キャンセル</button></div></div></div>';
-}
-function doCopy(dIdx,pIdx){
-  var work=W(),proc=work.days[dIdx].processes[pIdx];
-  var copy=JSON.parse(JSON.stringify(proc));
-  copy.segments=[nSeg()];  // 時間はリセット
-  var dest=document.getElementById('cpDest').value;
-  var ti=(dest==='same')?dIdx:parseInt(dest,10);
-  snapshot();work.days[ti].processes.push(copy);saveData();render();closeModal();
-}
 function renderSum(){
   var body=document.getElementById('workBody');
   var old=body.querySelector('.sa');if(old)old.remove();
