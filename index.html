@@ -56,6 +56,13 @@ h1{text-align:center;color:#a78bfa;font-size:20px;margin-bottom:4px}
 .modal-msg{color:#e2e8f0;font-size:14px;margin-bottom:18px;line-height:1.6}
 .modal-btns{display:flex;gap:10px;justify-content:center}
 .divhr{border:none;border-top:1px solid #2e2e3d;margin:14px 0}
+.chevron-btn{background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:18px;padding:0 4px;line-height:1;flex-shrink:0;transition:color .15s}
+.chevron-btn:hover{color:#a78bfa}
+.copy-proc-btn{background:transparent;border:none;color:#64748b;cursor:pointer;font-size:15px;padding:0 3px;transition:color .15s}
+.copy-proc-btn:hover{color:#a78bfa}
+.undo-btn{background:#22222c;border:1px solid #2e2e3d;border-radius:8px;color:#94a3b8;cursor:pointer;font-size:13px;font-weight:600;padding:7px 10px;transition:all .15s}
+.undo-btn:hover:not(:disabled){border-color:#7c6af7;color:#a78bfa}
+.undo-btn:disabled{opacity:0.3;cursor:default}
 </style>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="apple-touch-icon.png">
@@ -172,6 +179,30 @@ function makeTimeCell(getV,setV,getCtx,lbl){
 
 var works,aw=0;
 function W(){return works[aw];}
+var _undoStack=[],_redoStack=[];
+function snapshot(){
+  _undoStack.push(JSON.stringify({works:works,aw:aw}));
+  if(_undoStack.length>30)_undoStack.shift();
+  _redoStack=[];
+  updateUndoButtons();
+}
+function undoAction(){
+  if(!_undoStack.length)return;
+  _redoStack.push(JSON.stringify({works:works,aw:aw}));
+  var s=JSON.parse(_undoStack.pop());works=s.works;aw=s.aw;
+  saveData();render();
+}
+function redoAction(){
+  if(!_redoStack.length)return;
+  _undoStack.push(JSON.stringify({works:works,aw:aw}));
+  var s=JSON.parse(_redoStack.pop());works=s.works;aw=s.aw;
+  saveData();render();
+}
+function updateUndoButtons(){
+  var ub=document.getElementById('undoBtn'),rb=document.getElementById('redoBtn');
+  if(ub)ub.disabled=!_undoStack.length;
+  if(rb)rb.disabled=!_redoStack.length;
+}
 function saveData(){try{localStorage.setItem('tcData',JSON.stringify({works:works,aw:aw}));}catch(e){}}
 function loadData(){
   try{
@@ -305,7 +336,7 @@ function render(){
     var dt=dTotal(day);dtEl.textContent=dt>0?('計'+dt+'分'+(dt>=60?' ('+hStr(dt)+')':'')):'—';
 
     var ddel=document.createElement('button');ddel.className='del-x';ddel.style.fontSize='16px';ddel.textContent='✕';
-    (function(i,l){ddel.onclick=function(){showModal('「'+(l||'DAY '+(i+1))+'」を削除しますか？',function(){work.days.splice(i,1);render();});};})(di,day.label);
+    (function(i,l){ddel.onclick=function(){showModal('「'+(l||'DAY '+(i+1))+'」を削除しますか？',function(){snapshot();work.days.splice(i,1);render();});};})(di,day.label);
 
     // カレンダー: label[for=id]方式
     // カレンダー: inputをheadに直接置きbuttonで.click()を呼ぶ
@@ -384,7 +415,20 @@ function render(){
     lbl.style.pointerEvents='auto';
     lbl.addEventListener('click',function(e){e.stopPropagation();openCal();});
     lbl.addEventListener('touchend',function(e){e.preventDefault();e.stopPropagation();openCal();});
-    head.appendChild(calBtn);head.appendChild(lbl);head.appendChild(dtEl);head.appendChild(ddel);dayEl.appendChild(head);
+    if(!day.hasOwnProperty('collapsed'))day.collapsed=false;
+    var chevBtn=document.createElement('button');chevBtn.className='chevron-btn';
+    chevBtn.textContent=day.collapsed?'⌃':'⌄';
+    (function(dIdx,btn,body){
+      btn.onclick=function(e){
+        e.stopPropagation();
+        work.days[dIdx].collapsed=!work.days[dIdx].collapsed;
+        var col=work.days[dIdx].collapsed;
+        btn.textContent=col?'⌃':'⌄';
+        body.style.display=col?'none':'';
+        saveData();
+      };
+    })(di,chevBtn,dbody);
+    head.appendChild(chevBtn);head.appendChild(calBtn);head.appendChild(lbl);head.appendChild(dtEl);head.appendChild(ddel);dayEl.appendChild(head);
     var dbody=document.createElement('div');dbody.className='day-body';
 
     day.processes.forEach(function(proc,pi){
@@ -417,8 +461,10 @@ function render(){
       setTimeout(function(){autoHp(pn);},0);
       var ptEl=document.createElement('span');ptEl.className='proc-total';ptEl.textContent=pTotal(proc)>0?pTotal(proc)+'分':'';
       var pdel=document.createElement('button');pdel.className='del-x';pdel.textContent='✕';
-      (function(i,j,n){pdel.onclick=function(){showModal('「'+(n||'この作業')+'」を削除しますか？',function(){work.days[i].processes.splice(j,1);render();});};})(di,pi,proc.name);
-      phead.appendChild(pn);phead.appendChild(ptEl);phead.appendChild(pdel);pbox.appendChild(phead);
+      (function(i,j,n){pdel.onclick=function(){showModal('「'+(n||'この作業')+'」を削除しますか？',function(){snapshot();work.days[i].processes.splice(j,1);render();});};})(di,pi,proc.name);
+      var cpyBtn=document.createElement('button');cpyBtn.className='copy-proc-btn';cpyBtn.textContent='⧉';cpyBtn.title='コピー';
+      (function(dIdx,pIdx){cpyBtn.onclick=function(){showCopyModal(dIdx,pIdx);};})(di,pi);
+      phead.appendChild(pn);phead.appendChild(ptEl);phead.appendChild(cpyBtn);phead.appendChild(pdel);pbox.appendChild(phead);
 
       proc.segments.forEach(function(seg,si){
         var row=document.createElement('div');row.className='seg-row';
@@ -434,31 +480,36 @@ function render(){
         var res=document.createElement('span');res.className='seg-result';
         var d2=(seg.start&&seg.end)?diffMin(seg.start,seg.end):null;res.textContent=d2!==null?d2+'分':(seg.start||seg.end?'?':'—');
         row.appendChild(res);
-        if(proc.segments.length>1){var sx=document.createElement('button');sx.className='del-x';sx.textContent='✕';(function(i,j,k){sx.onclick=function(){work.days[i].processes[j].segments.splice(k,1);render();};})(di,pi,si);row.appendChild(sx);}
+        if(proc.segments.length>1){var sx=document.createElement('button');sx.className='del-x';sx.textContent='✕';(function(i,j,k){sx.onclick=function(){snapshot();work.days[i].processes[j].segments.splice(k,1);render();};})(di,pi,si);row.appendChild(sx);}
         pbox.appendChild(row);
       });
 
       var asb=document.createElement('button');asb.className='btn-dashed';asb.style.marginTop='4px';asb.textContent='＋ 時間追加';
-      (function(i,j){asb.onclick=function(){work.days[i].processes[j].segments.push(nSeg());render();};})(di,pi);
+      (function(i,j){asb.onclick=function(){snapshot();work.days[i].processes[j].segments.push(nSeg());render();};})(di,pi);
       pbox.appendChild(asb);
       dbody.appendChild(pbox);
     });
 
     var apb=document.createElement('button');apb.className='btn btn-ghost';apb.style.marginTop='6px';apb.textContent='＋ 作業追加';
-    (function(i){apb.onclick=function(){work.days[i].processes.push(nProc(i));render();};})(di);
-    dbody.appendChild(apb);dayEl.appendChild(dbody);body.appendChild(dayEl);
+    (function(i){apb.onclick=function(){snapshot();work.days[i].processes.push(nProc(i));render();};})(di);
+    dbody.appendChild(apb);
+    if(day.collapsed)dbody.style.display='none';
+    dayEl.appendChild(dbody);
+    body.appendChild(dayEl);
   });
 
   var br=document.createElement('div');br.className='btn-row';
   var adb=document.createElement('button');adb.className='btn btn-primary';adb.textContent='＋ 日を追加';
-  adb.onclick=function(){work.days.push(nDay());render();};
+  adb.onclick=function(){snapshot();work.days.push(nDay());render();};
+  var undoBtn=document.createElement('button');undoBtn.className='undo-btn';undoBtn.id='undoBtn';undoBtn.textContent='↩';undoBtn.title='取り消し';undoBtn.disabled=!_undoStack.length;undoBtn.onclick=undoAction;
+  var redoBtn=document.createElement('button');redoBtn.className='undo-btn';redoBtn.id='redoBtn';redoBtn.textContent='↪';redoBtn.title='やり直し';redoBtn.disabled=!_redoStack.length;redoBtn.onclick=redoAction;
   var dwb=document.createElement('button');dwb.className='btn btn-danger';dwb.textContent='作業ログ削除';
   dwb.onclick=function(){
     showModal('「'+(work.name||'作業ログ'+(aw+1))+'」を削除しますか？',function(){
-      if(works.length===1){works[0]={name:'作業ログ1',days:[nDay()]};}else{works.splice(aw,1);if(aw>=works.length)aw=works.length-1;}render();
+      snapshot();if(works.length===1){works[0]={name:'作業ログ1',days:[nDay()]};}else{works.splice(aw,1);if(aw>=works.length)aw=works.length-1;}render();
     });
   };
-  br.appendChild(adb);br.appendChild(dwb);body.appendChild(br);
+  br.appendChild(adb);br.appendChild(undoBtn);br.appendChild(redoBtn);br.appendChild(dwb);body.appendChild(br);
   renderSum();
 }
 
@@ -472,6 +523,24 @@ function updateRow(row,seg,pbox,proc,dtEl,day){saveData();
   renderSum();
 }
 
+function showCopyModal(dIdx,pIdx){
+  var work=W(),proc=work.days[dIdx].processes[pIdx];
+  var opts='<option value="same">同じ日の末尾（'+esc(work.days[dIdx].label||'DAY '+(dIdx+1))+'）</option>';
+  work.days.forEach(function(day,i){if(i!==dIdx)opts+='<option value="'+i+'">'+esc(day.label||'DAY '+(i+1))+'</option>';});
+  document.getElementById('modalArea').innerHTML='<div class="modal-bg"><div class="modal-box" style="max-width:300px;width:92%">'
+    +'<p class="modal-msg">「'+esc(proc.name)+'」のコピー先：</p>'
+    +'<select id="cpDest" style="width:100%;background:#22222c;border:1px solid #2e2e3d;border-radius:8px;color:#e2e8f0;font-size:14px;padding:8px;margin-bottom:16px;box-sizing:border-box">'+opts+'</select>'
+    +'<div class="modal-btns"><button class="btn btn-primary" onclick="doCopy('+dIdx+','+pIdx+')">コピー</button>'
+    +'<button class="btn btn-ghost" style="margin-left:8px" onclick="closeModal()">キャンセル</button></div></div></div>';
+}
+function doCopy(dIdx,pIdx){
+  var work=W(),proc=work.days[dIdx].processes[pIdx];
+  var copy=JSON.parse(JSON.stringify(proc));
+  copy.segments=[nSeg()];  // 時間はリセット
+  var dest=document.getElementById('cpDest').value;
+  var ti=(dest==='same')?dIdx:parseInt(dest,10);
+  snapshot();work.days[ti].processes.push(copy);saveData();render();closeModal();
+}
 function renderSum(){
   var body=document.getElementById('workBody');
   var old=body.querySelector('.sa');if(old)old.remove();
