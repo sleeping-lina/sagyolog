@@ -106,6 +106,10 @@ function todayLabel(){var d=new Date();return (d.getMonth()+1)+'/'+d.getDate()+'
 function hStr(m){return (m/60).toFixed(1)+'h';}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
+function showModalWithLabel(msg,okLabel,onOk){
+  document.getElementById('modalArea').innerHTML='<div class="modal-bg"><div class="modal-box"><p class="modal-msg">'+esc(msg)+'</p><div class="modal-btns"><button class="btn btn-ghost" onclick="closeModal()">キャンセル</button><button class="btn btn-danger" onclick="_mOk()">'+esc(okLabel)+'</button></div></div></div>';
+  window._mOk=function(){closeModal();onOk();};
+}
 function showModal(msg,onOk){
   document.getElementById('modalArea').innerHTML='<div class="modal-bg"><div class="modal-box"><p class="modal-msg">'+esc(msg)+'</p><div class="modal-btns"><button class="btn btn-ghost" onclick="closeModal()">キャンセル</button><button class="btn btn-danger" onclick="_mOk()">削除する</button></div></div></div>';
   window._mOk=function(){closeModal();onOk();};
@@ -250,7 +254,7 @@ function importData(){
       try{
         var d=JSON.parse(e.target.result);
         if(!d.works||!d.works.length){alert('データが見つかりませんでした');return;}
-        showModal('現在のデータを上書きしてインポートしますか？',function(){
+        showModalWithLabel('現在のデータを上書きしてインポートしますか？','上書きする',function(){
           works=d.works;aw=d.aw||0;saveData();render();
         });
       }catch(ex){alert('ファイルの読み込みに失敗しました');}
@@ -439,7 +443,6 @@ function render(){
       var _defProcName='作業'+(pi+1);
       pn.placeholder='作業名を入力';
       pn.value=proc.name;
-      function autoHp(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
       var _pnComp=false;
       pn.addEventListener('compositionstart',function(){_pnComp=true;});
       pn.addEventListener('compositionend',function(){
@@ -462,15 +465,17 @@ function render(){
       var ptEl=document.createElement('span');ptEl.className='proc-total';ptEl.textContent=pTotal(proc)>0?pTotal(proc)+'分':'';
       var pdel=document.createElement('button');pdel.className='del-x';pdel.textContent='✕';
       (function(i,j,n){pdel.onclick=function(){showModal('「'+(n||'この作業')+'」を削除しますか？',function(){snapshot();work.days[i].processes.splice(j,1);render();});};})(di,pi,proc.name);
-      var pmup=document.createElement('button');pmup.className='del-x';pmup.textContent='↑';pmup.style.fontSize='13px';
-      var pmdw=document.createElement('button');pmdw.className='del-x';pmdw.textContent='↓';pmdw.style.fontSize='13px';
-      if(pi===0)pmup.style.opacity='0.25';
-      if(pi===day.processes.length-1)pmdw.style.opacity='0.25';
       (function(i,j){
+        var pmup=document.createElement('button');pmup.className='del-x';pmup.textContent='↑';pmup.style.cssText='font-size:13px;margin-left:4px;';
+        var pmdw=document.createElement('button');pmdw.className='del-x';pmdw.textContent='↓';pmdw.style.cssText='font-size:13px;';
+        if(j===0)pmup.style.opacity='0.25';
+        if(j===work.days[i].processes.length-1)pmdw.style.opacity='0.25';
         pmup.onclick=function(){if(j>0){snapshot();var t=work.days[i].processes.splice(j,1)[0];work.days[i].processes.splice(j-1,0,t);saveData();render();}};
         pmdw.onclick=function(){if(j<work.days[i].processes.length-1){snapshot();var t=work.days[i].processes.splice(j,1)[0];work.days[i].processes.splice(j+1,0,t);saveData();render();}};
+        // ↑↓をpboxの右下に追加（asb の後に）
+        pbox._pmup=pmup;pbox._pmdw=pmdw;
       })(di,pi);
-      phead.appendChild(pn);phead.appendChild(ptEl);phead.appendChild(pmup);phead.appendChild(pmdw);phead.appendChild(pdel);pbox.appendChild(phead);
+      phead.appendChild(pn);phead.appendChild(ptEl);phead.appendChild(pdel);pbox.appendChild(phead);
 
       proc.segments.forEach(function(seg,si){
         var row=document.createElement('div');row.className='seg-row';
@@ -493,6 +498,11 @@ function render(){
       var asb=document.createElement('button');asb.className='btn-dashed';asb.style.marginTop='4px';asb.textContent='＋ 時間追加';
       (function(i,j){asb.onclick=function(){snapshot();work.days[i].processes[j].segments.push(nSeg());render();};})(di,pi);
       pbox.appendChild(asb);
+      // ↑↓ボタンを右下に配置
+      var moveRow=document.createElement('div');moveRow.style.cssText='display:flex;justify-content:flex-end;gap:4px;margin-top:4px;';
+      if(pbox._pmup)moveRow.appendChild(pbox._pmup);
+      if(pbox._pmdw)moveRow.appendChild(pbox._pmdw);
+      pbox.appendChild(moveRow);
       dbody.appendChild(pbox);
     });
 
