@@ -324,12 +324,15 @@ function render(){
       }
     })();
     calInp.addEventListener('change',function(){
-      var v=this.value;if(!v||v.length<8)return;
-      var pts=v.split('-');if(pts.length<3)return;
-      var y=parseInt(pts[0],10),mo=parseInt(pts[1],10),d=parseInt(pts[2],10);
-      if(!y||!mo||!d)return;
-      var _dt=new Date(y,mo-1,d);var wd=isNaN(_dt.getTime())?'?':'日月火水木金土'[_dt.getDay()];
-      day.label=mo+'/'+d+'('+wd+')';lbl.value=day.label;renderSum();saveData();
+      try{
+        var v=this.value;if(!v||v.length<8)return;
+        var pts=v.split('-');if(pts.length<3)return;
+        var y=parseInt(pts[0],10),mo=parseInt(pts[1],10),d=parseInt(pts[2],10);
+        if(isNaN(y)||isNaN(mo)||isNaN(d)||mo<1||mo>12||d<1||d>31)return;
+        var _dt=new Date(y,mo-1,d);if(isNaN(_dt.getTime()))return;
+        var wd='日月火水木金土'[_dt.getDay()];
+        day.label=mo+'/'+d+'('+wd+')';lbl.value=day.label;renderSum();saveData();
+      }catch(e){}
     });
     // 日付エリア全体（アイコン＋テキスト）をタップでカレンダー起動
     function openCal(){
@@ -342,34 +345,27 @@ function render(){
         tmpInp.style.cssText='position:fixed;opacity:0;font-size:16px;';
         // 確定済みの日付をカレンダー初期値に設定
         tmpInp.value=calInp.value;
+        function applyDate(v){
+          try{
+            if(!v||v.length<8)return false;
+            var pts=v.split('-');
+            if(pts.length<3)return false;
+            var y=parseInt(pts[0],10),mo=parseInt(pts[1],10),d=parseInt(pts[2],10);
+            if(isNaN(y)||isNaN(mo)||isNaN(d)||mo<1||mo>12||d<1||d>31)return false;
+            var _dt=new Date(y,mo-1,d);
+            if(isNaN(_dt.getTime()))return false;
+            var wd='日月火水木金土'[_dt.getDay()];
+            day.label=mo+'/'+d+'('+wd+')';
+            calInp.value=v;
+            lbl.value=day.label;renderSum();saveData();
+            return true;
+          }catch(e){return false;}
+        }
         tmpInp.addEventListener('change',function(){
-          var v=this.value;
-          // valueが空の場合はinputイベントからも取得を試みる
-          if(!v)v=tmpInp.value;
-          if(!v||v.length<8){document.body.removeChild(tmp);return;}
-          var pts=v.split('-');
-          if(pts.length<3){document.body.removeChild(tmp);return;}
-          var y=parseInt(pts[0],10),mo=parseInt(pts[1],10),d=parseInt(pts[2],10);
-          if(!y||!mo||!d){document.body.removeChild(tmp);return;}
-          var _dt=new Date(y,mo-1,d);var wd=isNaN(_dt.getTime())?'?':'日月火水木金土'[_dt.getDay()];
-          day.label=mo+'/'+d+'('+wd+')';
-          calInp.value=v;
-          lbl.value=day.label;renderSum();saveData();
+          applyDate(this.value);
           if(document.body.contains(tmp))document.body.removeChild(tmp);
         });
-        // inputイベントでも拾う（iOSが changeを発火しない場合の保険）
-        tmpInp.addEventListener('input',function(){
-          var v=this.value;
-          if(!v||v.length<8)return;
-          var pts=v.split('-');
-          if(pts.length<3)return;
-          var y=parseInt(pts[0],10),mo=parseInt(pts[1],10),d=parseInt(pts[2],10);
-          if(!y||!mo||!d)return;
-          var _dt=new Date(y,mo-1,d);var wd=isNaN(_dt.getTime())?'?':'日月火水木金土'[_dt.getDay()];
-          day.label=mo+'/'+d+'('+wd+')';
-          calInp.value=v;
-          lbl.value=day.label;renderSum();saveData();
-        });
+        tmpInp.addEventListener('input',function(){applyDate(this.value);});
         tmp.appendChild(tmpInp);
         document.body.appendChild(tmp);
         tmpInp.focus();tmpInp.click();
