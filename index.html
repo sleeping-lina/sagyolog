@@ -330,7 +330,7 @@ function render(){
 
     // 日付: 常にinput表示（iOSでspanクリック→focusが効かないため）
     var lbl=document.createElement('input');lbl.className='day-label-input';
-    lbl.style.cssText='flex:1;background:transparent;border:none;color:#fbbf24;font-weight:700;font-size:16px;outline:none;min-width:60px;cursor:default;pointer-events:none;user-select:none;';
+    lbl.style.cssText='flex:0 0 auto;background:transparent;border:none;color:#fbbf24;font-weight:700;font-size:16px;outline:none;cursor:default;pointer-events:none;user-select:none;';
     lbl.value=day.label||'';lbl.placeholder='日付';lbl.inputMode='numeric';
 
 
