@@ -24,7 +24,7 @@ h1{text-align:center;color:#a78bfa;font-size:20px;margin-bottom:4px}
 .del-x:hover{color:#f87171}
 .proc-box{background:#0f0f13;border:1px solid #2e2e3d;border-radius:8px;padding:10px;margin-bottom:8px}
 .proc-head{display:flex;align-items:center;gap:6px;margin-bottom:8px}
-.proc-name{flex:1;background:transparent;border:none;border-bottom:1px solid #2e2e3d;color:#e2e8f0;font-size:16px;padding:2px 4px;outline:none}
+.proc-name{flex:1;background:transparent;border:none;border-bottom:1px solid #2e2e3d;color:#e2e8f0;font-size:16px;padding:2px 4px;outline:none;height:auto;overflow:hidden;resize:none;}
 .proc-name:focus{border-bottom-color:#7c6af7}
 .proc-total{font-family:monospace;font-size:12px;color:#34d399;white-space:nowrap}
 .proc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
@@ -56,7 +56,7 @@ h1{text-align:center;color:#a78bfa;font-size:20px;margin-bottom:4px}
 .modal-msg{color:#e2e8f0;font-size:14px;margin-bottom:18px;line-height:1.6}
 .modal-btns{display:flex;gap:10px;justify-content:center}
 .divhr{border:none;border-top:1px solid #2e2e3d;margin:14px 0}
-.chevron-btn{background:transparent;border:1px solid #3a3a50;border-radius:5px;color:#94a3b8;cursor:pointer;font-size:12px;padding:2px 7px;line-height:1.4;transition:all .15s;text-align:center;width:fit-content;justify-self:center;margin:0 auto;}
+.chevron-btn{background:transparent;border:1px solid #3a3a50;border-radius:5px;color:#94a3b8;cursor:pointer;font-size:12px;padding:2px 7px;line-height:1.4;transition:all .15s;justify-self:center;align-self:center;display:block;margin:0 auto;}
 .chevron-btn:hover{border-color:#7c6af7;color:#a78bfa;}
 .undo-btn{background:#22222c;border:1px solid #2e2e3d;border-radius:8px;color:#94a3b8;cursor:pointer;font-size:13px;font-weight:600;padding:7px 10px;transition:all .15s}
 .undo-btn:hover:not(:disabled){border-color:#7c6af7;color:#a78bfa}
@@ -444,7 +444,7 @@ function render(){
       var pbox=document.createElement('div');pbox.className='proc-box';
       var phead=document.createElement('div');phead.className='proc-head';
       var pn=document.createElement('textarea');pn.className='proc-name';pn.rows=1;
-      pn.style.cssText+='resize:none;overflow:hidden;line-height:1.4';
+      pn.style.cssText+='resize:none;overflow:hidden;line-height:1.4;height:auto;';
       var _defProcName='作業'+(pi+1);
       pn.placeholder='作業名を入力';
       pn.value=proc.name;
