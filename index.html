@@ -446,28 +446,45 @@ function render(){
       var phead=document.createElement('div');phead.className='proc-head';
       var pn=document.createElement('textarea');pn.className='proc-name';
       pn.style.cssText='flex:1;background:transparent;border:none;border-bottom:1px solid #2e2e3d;color:#e2e8f0;font-size:16px;padding:2px 4px;outline:none;overflow:hidden;resize:none;box-sizing:border-box;line-height:1.5;';
-      var _defProcName='作業'+(pi+1);
-      pn.placeholder='作業名を入力';
-      pn.value=proc.name;
-      var _pnComp=false;
-      pn.addEventListener('compositionstart',function(){_pnComp=true;});
-      pn.addEventListener('compositionend',function(){
-        _pnComp=false;
-        proc.name=this.value||_defProcName;
-        autoHp(this);renderSum();saveData();
-      });
-      pn.oninput=function(){
-        if(_pnComp)return;
-        proc.name=this.value||_defProcName;
-        autoHp(this);renderSum();saveData();
-      };
-      pn.onblur=function(){
-        // 未確定中に離脱した場合: valueをprocの確定済み名で上書きして戻す
-        if(_pnComp){_pnComp=false;this.value=proc.name;return;}
-        if(!this.value.trim()){proc.name=_defProcName;this.value=_defProcName;renderSum();saveData();}
-      };
-      pn.onfocus=function(){this.select();};
-      setTimeout(function(){autoHp(pn);},50);
+      (function(procRef, defName){
+        pn.placeholder='作業名を入力';
+        pn.value=procRef.name;
+        var _pnComp=false;
+        pn.addEventListener('compositionstart',function(){_pnComp=true;});
+        pn.addEventListener('compositionend',function(){
+          _pnComp=false;
+          var v=this.value.trim();
+          if(v){procRef.name=v;}
+          this.value=procRef.name;
+          if(typeof autoHp==='function')autoHp(this);
+          renderSum();saveData();
+        });
+        pn.oninput=function(){
+          if(_pnComp)return;
+          var v=this.value.trim();
+          if(v){procRef.name=v;}
+          if(typeof autoHp==='function')autoHp(this);
+          renderSum();saveData();
+        };
+        pn.onblur=function(){
+          if(_pnComp){
+            // IME未確定で離脱: 確定済みの名前に戻す
+            _pnComp=false;
+            this.value=procRef.name;
+            return;
+          }
+          var v=this.value.trim();
+          if(!v){
+            procRef.name=defName;
+            this.value=defName;
+          } else {
+            procRef.name=v;
+          }
+          renderSum();saveData();
+        };
+        pn.onfocus=function(){this.select();};
+        setTimeout(function(){if(typeof autoHp==='function')autoHp(pn);},50);
+      })(proc, '作業'+(pi+1));
       var ptEl=document.createElement('span');ptEl.className='proc-total';ptEl.textContent=pTotal(proc)>0?pTotal(proc)+'分':'';
       var pdel=document.createElement('button');pdel.className='del-x';pdel.textContent='✕';
       (function(i,j,n){pdel.onclick=function(){showModal('「'+(n||'この作業')+'」を削除しますか？',function(){snapshot();work.days[i].processes.splice(j,1);render();});};})(di,pi,proc.name);
