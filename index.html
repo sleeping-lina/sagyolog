@@ -565,8 +565,9 @@ function updateRow(row,seg,pbox,proc,dtEl,day){saveData();
 
 function renderSum(){
   var body=document.getElementById('workBody');
+  if(!body)return;
   var old=body.querySelector('.sa');if(old)old.remove();
-  var work=W();if(!work.days.length)return;
+  var work=W();if(!work||!work.days||!work.days.length)return;
   var area=document.createElement('div');area.className='sa';
   var hr=document.createElement('hr');hr.className='divhr';area.appendChild(hr);
   var grid=document.createElement('div');grid.className='sum-grid';
@@ -597,6 +598,7 @@ function renderSum(){
   br3.appendChild(expBtn);br3.appendChild(impBtn);br3.appendChild(clrBtn);area.appendChild(br3);
   body.appendChild(area);
 }
+
 
 function genTxt(work){
   var lines=[];
