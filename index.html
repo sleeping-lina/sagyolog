@@ -29,7 +29,7 @@ h1{text-align:center;color:#a78bfa;font-size:20px;margin-bottom:4px}
 .proc-total{font-family:monospace;font-size:12px;color:#34d399;white-space:nowrap}
 .proc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
 .day-box{background:#22222c;border:1px solid #2e2e3d;border-radius:10px;margin-bottom:10px;overflow:hidden}
-.day-head{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#1c1c26;border-bottom:1px solid #2e2e3d;position:relative;}
+.day-head{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;padding:9px 12px;background:#1c1c26;border-bottom:1px solid #2e2e3d;}
 .day-label{flex:1;color:#fbbf24;font-weight:700;font-size:14px;cursor:pointer;min-width:60px}
 .day-label-input{flex:1;background:transparent;border:none;border-bottom:1px solid #7c6af7;color:#fbbf24;font-weight:700;font-size:16px;outline:none}
 .day-total{font-family:monospace;font-size:12px;color:#34d399;white-space:nowrap}
@@ -330,7 +330,7 @@ function render(){
 
     // 日付: 常にinput表示（iOSでspanクリック→focusが効かないため）
     var lbl=document.createElement('input');lbl.className='day-label-input';
-    lbl.style.cssText='flex:0 0 auto;background:transparent;border:none;color:#fbbf24;font-weight:700;font-size:16px;outline:none;cursor:default;pointer-events:none;user-select:none;';
+    lbl.style.cssText='width:fit-content;max-width:120px;background:transparent;border:none;color:#fbbf24;font-weight:700;font-size:16px;outline:none;cursor:default;pointer-events:none;user-select:none;';
     lbl.value=day.label||'';lbl.placeholder='日付';lbl.inputMode='numeric';
 
 
@@ -408,7 +408,7 @@ function render(){
     }
     var calBtn=document.createElement('button');
     calBtn.textContent='📅';calBtn.type='button';
-    calBtn.style.cssText='background:transparent;border:none;cursor:pointer;font-size:16px;padding:0 2px;line-height:1;flex-shrink:0;position:relative;width:auto;';
+    calBtn.style.cssText='background:transparent;border:none;cursor:pointer;font-size:16px;padding:0 2px;line-height:1;flex-shrink:0;position:relative;width:fit-content;';
     calBtn.appendChild(calInp);
     calBtn.addEventListener('click',function(e){e.stopPropagation();openCal();});
     calBtn.addEventListener('touchend',function(e){e.preventDefault();e.stopPropagation();openCal();});
@@ -433,9 +433,13 @@ function render(){
       };
     })(di,chevBtn,dbody);
     // 位置: 📅 → 日付 → ∨/∧ → 合計 → ✕
-    var leftWrap=document.createElement('span');leftWrap.style.cssText='display:flex;align-items:center;gap:4px;flex:0 0 auto;';
+    // grid: [📅+日付] [∨∧中央] [合計+✕右]
+    var leftWrap=document.createElement('span');
+    leftWrap.style.cssText='display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden;';
     leftWrap.appendChild(calBtn);leftWrap.appendChild(lbl);
-    var rightGrp=document.createElement('span');rightGrp.style.cssText='display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end;';
+    chevBtn.style.cssText='text-align:center;justify-self:center;';
+    var rightGrp=document.createElement('span');
+    rightGrp.style.cssText='display:flex;align-items:center;gap:6px;justify-content:flex-end;white-space:nowrap;';
     rightGrp.appendChild(dtEl);rightGrp.appendChild(ddel);
     head.appendChild(leftWrap);head.appendChild(chevBtn);head.appendChild(rightGrp);dayEl.appendChild(head);
 
