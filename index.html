@@ -408,7 +408,7 @@ function render(){
     }
     var calBtn=document.createElement('button');
     calBtn.textContent='📅';calBtn.type='button';
-    calBtn.style.cssText='background:transparent;border:none;cursor:pointer;font-size:16px;padding:0 2px;line-height:1;flex-shrink:0;position:relative;';
+    calBtn.style.cssText='background:transparent;border:none;cursor:pointer;font-size:16px;padding:0 2px;line-height:1;flex-shrink:0;position:relative;width:auto;';
     calBtn.appendChild(calInp);
     calBtn.addEventListener('click',function(e){e.stopPropagation();openCal();});
     calBtn.addEventListener('touchend',function(e){e.preventDefault();e.stopPropagation();openCal();});
@@ -422,7 +422,6 @@ function render(){
     if(day.collapsed)dbody.style.display='none';
     // chevBtnはdbody生成後に作成してdbodyを直接参照
     var chevBtn=document.createElement('button');chevBtn.className='chevron-btn';
-    chevBtn.style.cssText+='position:absolute;left:50%;transform:translateX(-50%);';
     chevBtn.textContent=day.collapsed?'∨':'∧';
     (function(dIdx,btn,bd){
       btn.onclick=function(e){
@@ -434,9 +433,11 @@ function render(){
       };
     })(di,chevBtn,dbody);
     // 位置: 📅 → 日付 → ∨/∧ → 合計 → ✕
-    var rightGrp=document.createElement('span');rightGrp.style.cssText='display:flex;align-items:center;gap:6px;margin-left:auto;';
+    var leftWrap=document.createElement('span');leftWrap.style.cssText='display:flex;align-items:center;gap:4px;flex:0 0 auto;';
+    leftWrap.appendChild(calBtn);leftWrap.appendChild(lbl);
+    var rightGrp=document.createElement('span');rightGrp.style.cssText='display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end;';
     rightGrp.appendChild(dtEl);rightGrp.appendChild(ddel);
-    head.appendChild(calBtn);head.appendChild(lbl);head.appendChild(chevBtn);head.appendChild(rightGrp);dayEl.appendChild(head);
+    head.appendChild(leftWrap);head.appendChild(chevBtn);head.appendChild(rightGrp);dayEl.appendChild(head);
 
     day.processes.forEach(function(proc,pi){
       var pbox=document.createElement('div');pbox.className='proc-box';
