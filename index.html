@@ -422,12 +422,12 @@ function render(){
     if(day.collapsed)dbody.style.display='none';
     // chevBtnはdbody生成後に作成してdbodyを直接参照
     var chevBtn=document.createElement('button');chevBtn.className='chevron-btn';
-    chevBtn.textContent=day.collapsed?'∧':'∨';
+    chevBtn.textContent=day.collapsed?'∨':'∧';
     (function(dIdx,btn,bd){
       btn.onclick=function(e){
         e.stopPropagation();
         work.days[dIdx].collapsed=!work.days[dIdx].collapsed;
-        btn.textContent=work.days[dIdx].collapsed?'∧':'∨';
+        btn.textContent=work.days[dIdx].collapsed?'∨':'∧';
         bd.style.display=work.days[dIdx].collapsed?'none':'';
         saveData();
       };
@@ -497,12 +497,14 @@ function render(){
 
       var asb=document.createElement('button');asb.className='btn-dashed';asb.style.marginTop='4px';asb.textContent='＋ 時間追加';
       (function(i,j){asb.onclick=function(){snapshot();work.days[i].processes[j].segments.push(nSeg());render();};})(di,pi);
-      pbox.appendChild(asb);
-      // ↑↓ボタンを右下に配置
-      var moveRow=document.createElement('div');moveRow.style.cssText='display:flex;justify-content:flex-end;gap:4px;margin-top:4px;';
-      if(pbox._pmup)moveRow.appendChild(pbox._pmup);
-      if(pbox._pmdw)moveRow.appendChild(pbox._pmdw);
-      pbox.appendChild(moveRow);
+      // ＋時間追加と↑↓を同じ行に
+      var footRow=document.createElement('div');footRow.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-top:4px;';
+      footRow.appendChild(asb);
+      var moveGrp=document.createElement('span');moveGrp.style.cssText='display:flex;gap:4px;';
+      if(pbox._pmup)moveGrp.appendChild(pbox._pmup);
+      if(pbox._pmdw)moveGrp.appendChild(pbox._pmdw);
+      footRow.appendChild(moveGrp);
+      pbox.appendChild(footRow);
       dbody.appendChild(pbox);
     });
 
