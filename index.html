@@ -24,7 +24,7 @@ h1{text-align:center;color:#a78bfa;font-size:20px;margin-bottom:4px}
 .del-x:hover{color:#f87171}
 .proc-box{background:#0f0f13;border:1px solid #2e2e3d;border-radius:8px;padding:10px;margin-bottom:8px}
 .proc-head{display:flex;align-items:center;gap:6px;margin-bottom:8px}
-.proc-name{flex:1;background:transparent;border:none;border-bottom:1px solid #2e2e3d;color:#e2e8f0;font-size:16px;padding:2px 4px;outline:none;overflow:hidden;resize:none;min-height:26px;box-sizing:border-box;}
+.proc-name{flex:1;background:transparent;border:none;border-bottom:1px solid #2e2e3d;color:#e2e8f0;font-size:16px;padding:2px 4px;outline:none;overflow:hidden;resize:none;box-sizing:border-box;}
 .proc-name:focus{border-bottom-color:#7c6af7}
 .proc-total{font-family:monospace;font-size:12px;color:#34d399;white-space:nowrap}
 .proc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
@@ -444,7 +444,7 @@ function render(){
       var pbox=document.createElement('div');pbox.className='proc-box';
       var phead=document.createElement('div');phead.className='proc-head';
       var pn=document.createElement('textarea');pn.className='proc-name';
-      pn.style.cssText='flex:1;background:transparent;border:none;border-bottom:1px solid #2e2e3d;color:#e2e8f0;font-size:16px;padding:2px 4px;outline:none;overflow:hidden;resize:none;min-height:26px;box-sizing:border-box;line-height:1.4;height:auto;';
+      pn.style.cssText='flex:1;background:transparent;border:none;border-bottom:1px solid #2e2e3d;color:#e2e8f0;font-size:16px;padding:2px 4px;outline:none;overflow:hidden;resize:none;box-sizing:border-box;line-height:1.5;height:auto;';
       var _defProcName='作業'+(pi+1);
       pn.placeholder='作業名を入力';
       pn.value=proc.name;
