@@ -205,6 +205,7 @@ function updateUndoButtons(){
   if(ub)ub.disabled=!_undoStack.length;
   if(rb)rb.disabled=!_redoStack.length;
 }
+function autoHp(el){el.style.height='0';el.style.height=el.scrollHeight+'px';}
 function saveData(){try{localStorage.setItem('tcData',JSON.stringify({works:works,aw:aw}));}catch(e){}}
 function loadData(){
   try{
@@ -444,7 +445,7 @@ function render(){
       var pbox=document.createElement('div');pbox.className='proc-box';
       var phead=document.createElement('div');phead.className='proc-head';
       var pn=document.createElement('textarea');pn.className='proc-name';
-      pn.style.cssText='flex:1;background:transparent;border:none;border-bottom:1px solid #2e2e3d;color:#e2e8f0;font-size:16px;padding:2px 4px;outline:none;overflow:hidden;resize:none;box-sizing:border-box;line-height:1.5;height:auto;';
+      pn.style.cssText='flex:1;background:transparent;border:none;border-bottom:1px solid #2e2e3d;color:#e2e8f0;font-size:16px;padding:2px 4px;outline:none;overflow:hidden;resize:none;box-sizing:border-box;line-height:1.5;';
       var _defProcName='作業'+(pi+1);
       pn.placeholder='作業名を入力';
       pn.value=proc.name;
