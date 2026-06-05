@@ -445,6 +445,14 @@ function render(){
         work.days[dIdx].collapsed=!work.days[dIdx].collapsed;
         btn.textContent=work.days[dIdx].collapsed?'∨':'∧';
         bd.style.display=work.days[dIdx].collapsed?'none':'';
+        // 展開時: 全pnにautoHpを適用（display:none中は計算できなかったため）
+        if(!work.days[dIdx].collapsed){
+          setTimeout(function(){
+            bd.querySelectorAll('.proc-name').forEach(function(pn){
+              if(typeof autoHp==='function')autoHp(pn);
+            });
+          },30);
+        }
         saveData();
       };
     })(di,chevBtn,dbody);
