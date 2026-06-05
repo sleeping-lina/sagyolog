@@ -510,11 +510,7 @@ function render(){
           renderSum();saveData();
         };
         pn.onfocus=function(){this.select();};
-        setTimeout(function(){
-          if(typeof autoHp==='function' && !_rendering && pn.offsetParent!==null){
-            autoHp(pn);
-          }
-        },100);
+        // autoHpはrender完了後にまとめて実行
       })(proc, '作業'+(pi+1));
       var ptEl=document.createElement('span');ptEl.className='proc-total';ptEl.textContent=pTotal(proc)>0?pTotal(proc)+'分':'';
       var pdel=document.createElement('button');pdel.className='del-x';pdel.textContent='✕';
@@ -583,6 +579,12 @@ function render(){
   br.appendChild(adb);br.appendChild(undoBtn);br.appendChild(redoBtn);br.appendChild(dwb);body.appendChild(br);
   renderSum();
   }catch(e){console.error('render:',e);}finally{_rendering=false;}
+  // collapsed=false の日のpnにautoHpを適用（表示中のもののみ）
+  setTimeout(function(){
+    document.querySelectorAll('.day-body:not([style*="display: none"]):not([style*="display:none"]) .proc-name').forEach(function(pn){
+      if(typeof autoHp==='function')autoHp(pn);
+    });
+  },50);
 }
 
 function updateRow(row,seg,pbox,proc,dtEl,day){saveData();
