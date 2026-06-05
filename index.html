@@ -170,9 +170,10 @@ function makeTimeCell(getV,setV,getCtx,lbl){
     if(e.key==='Backspace'&&this.value===''){inpH.focus();inpH.select();}
   });
   inpH.onblur=function(){
-    setTimeout(function(){if(document.activeElement!==inpM)cm();},50);
+    var _m=inpM;
+    setTimeout(function(){if(!_rendering&&document.activeElement!==_m)cm();},80);
   };
-  inpM.onblur=function(){if(document.activeElement!==inpH)cm();};
+  inpM.onblur=function(){if(_rendering)return;if(document.activeElement!==inpH)cm();};
   sb();
   w.appendChild(btn);w.appendChild(inpH);w.appendChild(colon);w.appendChild(inpM);
   return w;
@@ -255,6 +256,14 @@ function importData(){
       try{
         var d=JSON.parse(e.target.result);
         if(!d.works||!d.works.length){alert('データが見つかりませんでした');return;}
+        d.works.forEach(function(w){
+          (w.days||[]).forEach(function(day){
+            (day.processes||[]).forEach(function(p){
+              if(!p.segments||!p.segments.length)p.segments=[{start:'',end:''}];
+              if(!p.name)p.name='作業1';
+            });
+          });
+        });
         showModalWithLabel('現在のデータを上書きしてインポートしますか？','上書きする',function(){
           works=d.works;aw=d.aw||0;saveData();render();
         });
@@ -278,6 +287,7 @@ function nDay(){return{label:todayLabel(),processes:[nProc()]};}
 var _rendering=false;
 function render(){
   _rendering=true;
+  try{
   saveData();
   // tabs
   var tabs=document.getElementById('workTabs');tabs.innerHTML='';
@@ -559,7 +569,7 @@ function render(){
   };
   br.appendChild(adb);br.appendChild(undoBtn);br.appendChild(redoBtn);br.appendChild(dwb);body.appendChild(br);
   renderSum();
-  _rendering=false;
+  }catch(e){console.error('render:',e);}finally{_rendering=false;}
 }
 
 function updateRow(row,seg,pbox,proc,dtEl,day){saveData();
