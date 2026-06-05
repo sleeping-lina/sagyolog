@@ -275,7 +275,9 @@ function nProc(di){
 }
 function nDay(){return{label:todayLabel(),processes:[nProc()]};}
 
+var _rendering=false;
 function render(){
+  _rendering=true;
   saveData();
   // tabs
   var tabs=document.getElementById('workTabs');tabs.innerHTML='';
@@ -312,6 +314,7 @@ function render(){
     autoH(this);saveData();
   };
   ni.onblur=function(){
+    if(_rendering)return;
     if(_niComp){_niComp=false;this.value=work.name;return;}
     if(!this.value.trim()){
       work.name='作業ログ'+(aw+1);this.value=work.name;
@@ -467,8 +470,9 @@ function render(){
           renderSum();saveData();
         };
         pn.onblur=function(){
+          // render中（折りたたみ状態含む）は処理しない
+          if(_rendering)return;
           if(_pnComp){
-            // IME未確定で離脱: 確定済みの名前に戻す
             _pnComp=false;
             this.value=procRef.name;
             return;
@@ -483,7 +487,11 @@ function render(){
           renderSum();saveData();
         };
         pn.onfocus=function(){this.select();};
-        setTimeout(function(){if(typeof autoHp==='function')autoHp(pn);},50);
+        setTimeout(function(){
+          if(typeof autoHp==='function' && pn.offsetParent!==null){
+            autoHp(pn);
+          }
+        },50);
       })(proc, '作業'+(pi+1));
       var ptEl=document.createElement('span');ptEl.className='proc-total';ptEl.textContent=pTotal(proc)>0?pTotal(proc)+'分':'';
       var pdel=document.createElement('button');pdel.className='del-x';pdel.textContent='✕';
@@ -551,6 +559,7 @@ function render(){
   };
   br.appendChild(adb);br.appendChild(undoBtn);br.appendChild(redoBtn);br.appendChild(dwb);body.appendChild(br);
   renderSum();
+  _rendering=false;
 }
 
 function updateRow(row,seg,pbox,proc,dtEl,day){saveData();
