@@ -206,7 +206,12 @@ function updateUndoButtons(){
   if(ub)ub.disabled=!_undoStack.length;
   if(rb)rb.disabled=!_redoStack.length;
 }
-function autoHp(el){el.style.height='0';el.style.height=el.scrollHeight+'px';}
+function autoHp(el){
+  el.rows=1;
+  el.style.height='auto';
+  var h=el.scrollHeight;
+  if(h>0)el.style.height=h+'px';
+}
 function saveData(){try{localStorage.setItem('tcData',JSON.stringify({works:works,aw:aw}));}catch(e){}}
 function loadData(){
   try{
@@ -498,10 +503,10 @@ function render(){
         };
         pn.onfocus=function(){this.select();};
         setTimeout(function(){
-          if(typeof autoHp==='function' && pn.offsetParent!==null){
+          if(typeof autoHp==='function' && !_rendering && pn.offsetParent!==null){
             autoHp(pn);
           }
-        },50);
+        },100);
       })(proc, '作業'+(pi+1));
       var ptEl=document.createElement('span');ptEl.className='proc-total';ptEl.textContent=pTotal(proc)>0?pTotal(proc)+'分':'';
       var pdel=document.createElement('button');pdel.className='del-x';pdel.textContent='✕';
